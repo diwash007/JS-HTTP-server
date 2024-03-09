@@ -19,6 +19,15 @@ const server = net.createServer((socket) => {
           text +
           "\r\n\r\n"
       );
+    } else if (path === "/user-agent") {
+      const lines = data.toString().split("\r\n");
+      const userAgent = lines[2].split(" ")[1];
+      socket.write(
+        "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: " +
+          userAgent.length +
+          "\r\n\r\n" +
+          userAgent
+      );
     } else {
       socket.write("HTTP/1.1 404\r\n\r\n");
     }
