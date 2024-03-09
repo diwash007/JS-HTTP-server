@@ -10,10 +10,20 @@ const server = net.createServer((socket) => {
     server.close();
   });
 
-  socket.on("data",(data)=>{
-    socket.write('HTTP/1.1 200 OK\r\n\r\n');
+  // socket.on("data", (data) => {
+  //   socket.write("HTTP/1.1 200 OK\r\n\r\n");
+  //   socket.close();
+  // });
+
+  socket.on("data", (data) => {
+    const [method, path, version] = data.toString().split(" ");
+    if (path === "/") {
+      socket.write("HTTP/1.1 200 OK\r\n\r\n");
+    } else {
+      socket.write("HTTP/1.1 404\r\n\r\n");
+    }
     socket.close();
-});
+  });
 });
 
 server.listen(4221, "localhost");
