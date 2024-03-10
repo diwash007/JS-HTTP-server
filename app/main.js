@@ -12,7 +12,7 @@ const server = net.createServer((socket) => {
   });
 
   socket.on("data", (data) => {
-    const reqPath = getPath(data);
+    const [method, reqPath] = data.toString().split(" ");
 
     if (reqPath === "/") {
       socket.write(makeStatus("200 Ok"));
@@ -20,15 +20,12 @@ const server = net.createServer((socket) => {
     }
 
     if (!allowedPaths.some((p) => reqPath.startsWith(p))) {
-      console.log("hiyaa");
       socket.write(makeStatus("404 NOT_FOUND"));
       return;
     }
 
     bind("/echo/", data, (data) => {
       const text = reqPath.slice(6);
-      console.log(text);
-      console.log(reqPath);
       socket.write(makeResponse(text));
     });
 
@@ -41,12 +38,26 @@ const server = net.createServer((socket) => {
     bind("/files/", data, (data) => {
       const fileName = reqPath.slice("/files/".length);
       const filePath = path.resolve(directory, fileName);
-      if (!fs.existsSync(filePath)) {
-        socket.write("HTTP/1.1 404 NOT_FOUND\r\n\r\n");
-        return socket.end();
+
+      if (method === "GET") {
+        if (!fs.existsSync(filePath)) {
+          socket.write("HTTP/1.1 404 NOT_FOUND\r\n\r\n");
+          return socket.end();
+        }
+        const fileContent = fs.readFileSync(filePath);
+        socket.write(makeResponse(fileContent, "application/octet-stream"));
       }
-      const fileContent = fs.readFileSync(filePath);
-      socket.write(makeResponse(fileContent, "application/octet-stream"));
+
+      if (method === "POST") {
+        const lines = data.toString().split("\r\n");
+        const body = lines[lines.length - 1];
+        try {
+          fs.writeFileSync(filePath, body);
+          socket.write(makeStatus("201 CREATED"));
+        } catch (err) {
+          console.error(err);
+        }
+      }
     });
   });
 });
@@ -66,7 +77,7 @@ function makeStatus(status) {
 }
 
 function getPath(data) {
-  const [method, reqPath, version] = data.toString().split(" ");
+  const reqPath = data.toString().split(" ")[1];
   return reqPath;
 }
 
