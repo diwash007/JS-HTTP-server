@@ -28,6 +28,10 @@ const server = net.createServer((socket) => {
     } else if (reqPath.startsWith("/files/")) {
       const fileName = reqPath.slice("/files/".length);
       const filePath = path.resolve(process.argv[3], fileName);
+      if (!fs.existsSync(filePath)) {
+        socket.write("HTTP/1.1 404 NOT_FOUND\r\n\r\n");
+        socket.end();
+      }
       const fileContent = fs.readFileSync(filePath);
       socket.write(makeResponse(fileContent, "application/octet-stream"));
     } else {
